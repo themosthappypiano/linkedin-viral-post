@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Viral Post Scraper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0077b5, #004471);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 119, 181, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0077b5, #004471);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #0077b5;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .niche-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .niche-card {
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .niche-card:hover {
+            border-color: #0077b5;
+            background: #e8f4f8;
+        }
+
+        .niche-card.selected {
+            border-color: #0077b5;
+            background: #0077b5;
+            color: white;
+        }
+
+        .keyword-search {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .keyword-suggestions {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            position: absolute;
+            width: 100%;
+            z-index: 1000;
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .suggestion-item:hover {
+            background: #f8f9fa;
+        }
+
+        .keyword-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            min-height: 50px;
+        }
+
+        .keyword-tag {
+            background: #0077b5;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .keyword-tag .remove {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: #0077b5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #004471;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e1e5e9;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+
+        .url-preview {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #0077b5;
+        }
+
+        .url-preview h4 {
+            margin-bottom: 8px;
+            color: #0077b5;
+        }
+
+        .url-text {
+            word-break: break-all;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0077b5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .niche-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 LinkedIn Viral Post Scraper</h1>
+            <p>Select your niche OR search and add keywords to scrape viral LinkedIn content</p>
+        </div>
+
+        <div class="form-container">
+            <form id="scraperForm">
+                <!-- Niche Selection -->
+                <div class="form-group">
+                    <label>Select Your Niche OR Search Keywords</label>
+                    <div class="niche-grid" id="nicheGrid">
+                        <div class="niche-card" data-niche="technology">
+                            <strong>🔧 Technology</strong><br>
+                            <small>AI, SaaS, Cloud, Cybersecurity</small>
+                        </div>
+                        <div class="niche-card" data-niche="marketing">
+                            <strong>📈 Marketing</strong><br>
+                            <small>Digital, Content, SEO, Social</small>
+                        </div>
+                        <div class="niche-card" data-niche="sales">
+                            <strong>💼 Sales</strong><br>
+                            <small>Business Dev, CRM, Leads</small>
+                        </div>
+                        <div class="niche-card" data-niche="finance">
+                            <strong>💰 Finance</strong><br>
+                            <small>Fintech, Investment, Crypto</small>
+                        </div>
+                        <div class="niche-card" data-niche="healthcare">
+                            <strong>🏥 Healthcare</strong><br>
+                            <small>Digital Health, Innovation</small>
+                        </div>
+                        <div class="niche-card" data-niche="leadership">
+                            <strong>👑 Leadership</strong><br>
+                            <small>Executive, Management</small>
+                        </div>
+                        <div class="niche-card" data-niche="startup">
+                            <strong>🚀 Startup</strong><br>
+                            <small>Entrepreneurship, VC, Innovation</small>
+                        </div>
+                        <div class="niche-card" data-niche="hr">
+                            <strong>👥 HR & Talent</strong><br>
+                            <small>Recruiting, People Ops</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Keyword Search & Selection -->
+                <div class="form-group">
+                    <label>Search & Add Keywords</label>
+                    <div class="keyword-search">
+                        <input type="text" id="keywordSearch" placeholder="Type to search for keywords..." autocomplete="off">
+                        <div class="keyword-suggestions" id="keywordSuggestions"></div>
+                    </div>
+                    <div class="keyword-tags" id="selectedKeywords">
+                        <div style="color: #666; font-style: italic;">Selected keywords will appear here...</div>
+                    </div>
+                </div>
+
+                <!-- Posted Limit Filter -->
+                <div class="form-group">
+                    <label>Posted Limit (filter)</label>
+                    <select id="postedLimit">
+                        <option value="">any</option>
+                        <option value="1h">1h</option>
+                        <option value="24h">24h</option>
+                        <option value="week">week</option>
+                        <option value="month">month</option>
+                        <option value="3months">3months</option>
+                        <option value="6months">6months</option>
+                        <option value="year">year</option>
+                    </select>
+                </div>
+
+                <!-- Max Results -->
+                <div class="form-group">
+                    <label>Max Results</label>
+                    <input type="number" id="maxResults" placeholder="100" min="1" max="1000" value="100" required>
+                </div>
+
+                <!-- Minimum Engagement -->
+                <div class="form-group">
+                    <label>Minimum Likes</label>
+                    <input type="number" id="minLikes" placeholder="10" min="0" value="10">
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        Minimum number of likes a post should have
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label>Minimum Comments</label>
+                    <input type="number" id="minComments" placeholder="2" min="0" value="2">
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        Minimum number of comments a post should have
+                    </small>
+                </div>
+
+                <!-- Manual Keyword Input -->
+                <div class="form-group">
+                    <label>Manual Keywords (Optional)</label>
+                    <textarea id="manualKeywords" placeholder="Enter additional keywords separated by commas..."></textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="btn-group">
+                    <button type="button" class="btn btn-secondary" id="generateBtn">
+                        🎯 Generate Keywords
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        🚀 Start Scraping
+                    </button>
+                </div>
+
+                <!-- URL Preview -->
+                <div class="url-preview" id="urlPreview" style="display: none;">
+                    <h4>🔗 Generated LinkedIn Search URL</h4>
+                    <div class="url-text" id="urlText"></div>
+                </div>
+
+                <!-- Loading State -->
+                <div class="loading" id="loadingState">
+                    <div class="spinner"></div>
+                    <p>Processing your request...</p>
+                </div>
+
+                <!-- Status Messages -->
+                <div class="status-message" id="statusMessage"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Keywords database organized by niche
+        const keywordsDatabase = {
+            technology: [
+                'AI', 'Machine Learning', 'Artificial Intelligence', 'SaaS', 'Cloud Computing', 
+                'Cybersecurity', 'DevOps', 'API', 'Software Development', 'Tech Innovation',
+                'Digital Transformation', 'Automation', 'Big Data', 'IoT', 'Blockchain',
+                'React', 'JavaScript', 'Python', 'Cloud Security', 'Data Science'
+            ],
+            marketing: [
+                'Content Marketing', 'Digital Marketing', 'SEO', 'Social Media Marketing',
+                'Email Marketing', 'Marketing Strategy', 'Brand Building', 'Growth Hacking',
+                'Marketing Automation', 'Conversion Optimization', 'Performance Marketing',
+                'Influencer Marketing', 'Video Marketing', 'B2B Marketing', 'Lead Generation',
+                'Marketing Analytics', 'Customer Journey', 'Marketing ROI', 'Content Strategy'
+            ],
+            sales: [
+                'Business Development', 'Sales Strategy', 'CRM', 'Lead Generation', 
+                'Sales Enablement', 'Account Management', 'B2B Sales', 'Sales Funnel',
+                'Sales Process', 'Cold Outreach', 'Sales Training', 'Pipeline Management',
+                'Revenue Growth', 'Client Acquisition', 'Sales Performance', 'Negotiation',
+                'Customer Success', 'Sales Operations', 'Territory Management'
+            ],
+            finance: [
+                'Fintech', 'Investment', 'Cryptocurrency', 'Financial Planning', 'Wealth Management',
+                'Banking', 'Financial Technology', 'Trading', 'Risk Management', 'Insurance',
+                'Real Estate Investment', 'Portfolio Management', 'Financial Analysis',
+                'Personal Finance', 'Corporate Finance', 'Venture Capital', 'Angel Investing',
+                'Financial Markets', 'Economic Trends', 'Financial Literacy'
+            ],
+            healthcare: [
+                'Digital Health', 'Telemedicine', 'Healthcare Innovation', 'Medical Technology',
+                'Healthcare IT', 'Patient Care', 'Healthcare Management', 'Medical Devices',
+                'Pharmaceutical', 'Healthcare Analytics', 'Electronic Health Records',
+                'Healthcare Compliance', 'Medical Research', 'Health Tech', 'Wellness',
+                'Mental Health', 'Public Health', 'Healthcare Quality', 'Medical AI'
+            ],
+            leadership: [
+                'Executive Leadership', 'Team Management', 'Corporate Strategy', 'Change Management',
+                'Leadership Development', 'Organizational Culture', 'Strategic Planning',
+                'Performance Management', 'Employee Engagement', 'Talent Development',
+                'Executive Coaching', 'Decision Making', 'Leadership Skills', 'Team Building',
+                'Emotional Intelligence', 'Communication Skills', 'Conflict Resolution',
+                'Succession Planning', 'Leadership Training', 'Management Best Practices'
+            ],
+            startup: [
+                'Entrepreneurship', 'Venture Capital', 'Startup Culture', 'Innovation',
+                'Business Model', 'Product Development', 'Scaling', 'Startup Funding',
+                'Lean Startup', 'MVP', 'Product Market Fit', 'Startup Growth', 'Pivot',
+                'Angel Investment', 'Seed Funding', 'Series A', 'Startup Ecosystem',
+                'Disruptive Innovation', 'Tech Startup', 'Startup Strategy', 'Unicorn'
+            ],
+            hr: [
+                'Human Resources', 'Talent Acquisition', 'Recruiting', 'People Operations',
+                'Employee Experience', 'Workforce Management', 'Talent Management',
+                'Performance Review', 'Company Culture', 'Employee Benefits', 'HR Technology',
+                'Diversity and Inclusion', 'Remote Work', 'Employee Retention', 'Learning and Development',
+                'Compensation', 'HR Analytics', 'Workplace Wellness', 'Employment Law', 'Onboarding'
+            ]
+        };
+
+        // State management
+        let selectedNiche = '';
+        let selectedKeywords = new Set();
+        let webhookUrl = 'https://n8n.themosthappypiano.me/webhook/linkedin-content-analyzer';
+
+        // DOM elements
+        const nicheGrid = document.getElementById('nicheGrid');
+        const keywordSearch = document.getElementById('keywordSearch');
+        const keywordSuggestions = document.getElementById('keywordSuggestions');
+        const selectedKeywordsContainer = document.getElementById('selectedKeywords');
+        const postedLimit = document.getElementById('postedLimit');
+        const maxResults = document.getElementById('maxResults');
+        const minLikes = document.getElementById('minLikes');
+        const minComments = document.getElementById('minComments');
+        const manualKeywords = document.getElementById('manualKeywords');
+        const generateBtn = document.getElementById('generateBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const urlPreview = document.getElementById('urlPreview');
+        const urlText = document.getElementById('urlText');
+        const loadingState = document.getElementById('loadingState');
+        const statusMessage = document.getElementById('statusMessage');
+        const scraperForm = document.getElementById('scraperForm');
+
+        // Event listeners
+        nicheGrid.addEventListener('click', handleNicheSelection);
+        keywordSearch.addEventListener('input', handleKeywordSearch);
+        postedLimit.addEventListener('change', updateUrlPreview);
+        generateBtn.addEventListener('click', generateKeywords);
+        submitBtn.addEventListener('click', handleSubmit);
+        scraperForm.addEventListener('submit', handleSubmit);
+
+        function handleNicheSelection(e) {
+            const nicheCard = e.target.closest('.niche-card');
+            if (!nicheCard) return;
+
+            // Remove previous selection
+            nicheGrid.querySelectorAll('.niche-card').forEach(card => card.classList.remove('selected'));
+            
+            // Add selection to clicked card
+            nicheCard.classList.add('selected');
+            selectedNiche = nicheCard.dataset.niche;
+            
+            // Auto-generate keywords for selected niche
+            generateKeywords();
+        }
+
+        function handleKeywordSearch(e) {
+            const query = e.target.value.toLowerCase();
+            keywordSuggestions.innerHTML = '';
+
+            if (query.length < 2) {
+                keywordSuggestions.style.display = 'none';
+                return;
+            }
+
+            const allKeywords = selectedNiche ? keywordsDatabase[selectedNiche] : 
+                Object.values(keywordsDatabase).flat();
+
+            const matches = allKeywords.filter(keyword => 
+                keyword.toLowerCase().includes(query) && !selectedKeywords.has(keyword)
+            );
+
+            if (matches.length > 0) {
+                keywordSuggestions.innerHTML = matches.slice(0, 8).map(keyword => 
+                    `<div class="suggestion-item" onclick="addKeyword('${keyword}')">${keyword}</div>`
+                ).join('');
+                keywordSuggestions.style.display = 'block';
+            } else {
+                keywordSuggestions.style.display = 'none';
+            }
+        }
+
+        function addKeyword(keyword) {
+            selectedKeywords.add(keyword);
+            updateKeywordDisplay();
+            keywordSearch.value = '';
+            keywordSuggestions.style.display = 'none';
+            updateUrlPreview();
+        }
+
+        function removeKeyword(keyword) {
+            selectedKeywords.delete(keyword);
+            updateKeywordDisplay();
+            updateUrlPreview();
+        }
+
+        function updateKeywordDisplay() {
+            if (selectedKeywords.size === 0) {
+                selectedKeywordsContainer.innerHTML = '<div style="color: #666; font-style: italic;">Selected keywords will appear here...</div>';
+                return;
+            }
+
+            selectedKeywordsContainer.innerHTML = Array.from(selectedKeywords).map(keyword => 
+                `<div class="keyword-tag">
+                    ${keyword}
+                    <span class="remove" onclick="removeKeyword('${keyword}')">&times;</span>
+                </div>`
+            ).join('');
+        }
+
+        function generateKeywords() {
+            if (!selectedNiche) {
+                showStatus('Please select a niche first!', 'error');
+                return;
+            }
+
+            // Add top 5 keywords from selected niche
+            const nicheKeywords = keywordsDatabase[selectedNiche].slice(0, 5);
+            nicheKeywords.forEach(keyword => selectedKeywords.add(keyword));
+            
+            updateKeywordDisplay();
+            updateUrlPreview();
+            showStatus(`Generated ${nicheKeywords.length} keywords for ${selectedNiche}!`, 'success');
+        }
+
+        function updateUrlPreview() {
+            if (selectedKeywords.size === 0) {
+                urlPreview.style.display = 'none';
+                return;
+            }
+
+            const keywords = Array.from(selectedKeywords);
+            const searchQuery = keywords.map(k => `"${k}"`).join(' OR ');
+            const encodedQuery = encodeURIComponent(searchQuery);
+            
+            let linkedinUrl = `https://www.linkedin.com/search/results/content/?keywords=${encodedQuery}&origin=FACETED_SEARCH`;
+            
+            // Add date filter if selected
+            const dateFilter = postedLimit.value;
+            if (dateFilter) {
+                linkedinUrl += `&datePosted=%22${dateFilter}%22`;
+            }
+            
+            urlText.textContent = linkedinUrl;
+            urlPreview.style.display = 'block';
+        }
+
+        function handleSubmit(e) {
+            e.preventDefault();
+            
+            if (selectedKeywords.size === 0 && !manualKeywords.value.trim()) {
+                showStatus('Please select at least one keyword or enter manual keywords!', 'error');
+                return;
+            }
+
+            const manualKeywordsText = manualKeywords.value.trim();
+            const allKeywords = Array.from(selectedKeywords);
+            
+            if (manualKeywordsText) {
+                const manual = manualKeywordsText.split(',').map(k => k.trim()).filter(k => k);
+                allKeywords.push(...manual);
+            }
+
+            // Generate URL if not already generated
+            if (allKeywords.length > 0) {
+                const searchQuery = allKeywords.map(k => `"${k}"`).join(' OR ');
+                const encodedQuery = encodeURIComponent(searchQuery);
+                let linkedinUrl = `https://www.linkedin.com/search/results/content/?keywords=${encodedQuery}&origin=FACETED_SEARCH`;
+                
+                if (postedLimit.value) {
+                    linkedinUrl += `&datePosted=%22${postedLimit.value}%22`;
+                }
+                
+                urlText.textContent = linkedinUrl;
+            }
+
+            const maxResultsValue = maxResults.value ? parseInt(maxResults.value) : 100;
+            
+            const formData = {
+                niche: selectedNiche || 'custom',
+                keywords: allKeywords,
+                maxResults: maxResultsValue,
+                linkedinSearchUrl: urlText.textContent,
+                postedLimit: postedLimit.value || null,
+                minLikes: parseInt(minLikes.value) || 0,
+                minComments: parseInt(minComments.value) || 0,
+                timestamp: new Date().toISOString()
+            };
+            
+            console.log('Max Results Input Value:', maxResults.value);
+            console.log('Parsed Max Results:', maxResultsValue);
+
+            console.log('Sending webhook data:', formData);
+
+            // Show loading state
+            showLoading(true);
+            
+            // Send data to webhook
+            fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                showLoading(false);
+                console.log('Webhook status:', response.status);
+                showStatus('Successfully sent data! LinkedIn scraping will begin shortly.', 'success');
+                
+                // Reset form after successful submission
+                setTimeout(() => {
+                    resetForm();
+                }, 3000);
+            })
+            .catch(error => {
+                showLoading(false);
+                showStatus(`Error sending data to webhook: ${error.message}`, 'error');
+                console.error('Webhook error:', error);
+                console.error('Full error details:', error);
+            });
+        }
+
+        function showLoading(show) {
+            loadingState.style.display = show ? 'block' : 'none';
+            submitBtn.disabled = show;
+        }
+
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        function resetForm() {
+            selectedKeywords.clear();
+            selectedNiche = '';
+            postedLimit.value = '';
+            maxResults.value = '100';
+            minLikes.value = '10';
+            minComments.value = '2';
+            manualKeywords.value = '';
+            keywordSearch.value = '';
+            
+            nicheGrid.querySelectorAll('.niche-card').forEach(card => card.classList.remove('selected'));
+            updateKeywordDisplay();
+            urlPreview.style.display = 'none';
+        }
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.keyword-search')) {
+                keywordSuggestions.style.display = 'none';
+            }
+        });
+
+        // Initialize the form
+        updateKeywordDisplay();
+    </script>
+</body>
+</html>
